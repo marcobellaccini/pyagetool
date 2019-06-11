@@ -18,5 +18,7 @@ class TestPyagetool(unittest.TestCase):
     def tearDown(self):
         """Tear down test fixtures, if any."""
 
-    def test_000_something(self):
-        """Test something."""
+    def test_000_hello(self):
+        """Test hello."""
+        x = pyagetool.Age()
+        self.assertEqual(x.hello(), 'hello world')
