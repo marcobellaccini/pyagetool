@@ -10,7 +10,10 @@ RL_MAX_CHARS = 200
 class Age:
     """Main age format class"""
 
-    def parse_header(self, path):
+    # b64u stands for "Base 64 Encoding with URL and Filename Safe Alphabet"
+    # https://tools.ietf.org/html/rfc4648#section-5
+
+    def _parse_header(self, path):
         """This method parses encrypted file header.
 
         Args:
@@ -35,18 +38,18 @@ class Age:
             if age_version != '1':
                 raise ValueError('Unsupported age-tool format version.')
             # read the remaining part of the header and get the HMAC
-            b64_header_hmac = ""
+            b64u_header_hmac = ""
             recipent_lines = []
-            while not b64_header_hmac:
+            while not b64u_header_hmac:
                 line = f.readline(RL_MAX_CHARS)
                 # if EOF
                 if not line:
                     raise ValueError('Missing header HMAC.')
                 # try to match HMAC
-                m = re.match(r"--- (?P<b64_header_hmac>[a-zA-Z0-9+/=]+)", line)
+                m = re.match(r"--- (?P<b64u_header_hmac>[a-zA-Z0-9\-_=]+)", line)
                 # if HMAC was found
                 if m:
-                    b64_header_hmac = m.group('b64_header_hmac')
+                    b64u_header_hmac = m.group('b64u_header_hmac')
                 # else, collect recipent lines
                 else:
                     recipent_lines.append(line)
@@ -57,9 +60,9 @@ class Age:
             recipients = []
             for recipent_line in recipent_lines:
                 # if recipient start
-                if re.match(r"-> .*", recipent_line):
-                    # append recipient entry with empty body
-                    recipients.append( (parse_recipient_start(recipent_line),
+                if re.match(r"-> [a-zA-Z0-9\-]+ ", recipent_line):
+                    # append recipient entry (type, arguments)
+                    recipients.append( (_parse_recipient_start(recipent_line),
                                         []) )
                     continue
                 # else, if recipient body, add body part to last recipient
@@ -73,3 +76,16 @@ class Age:
             # TODO: CHECK HMAC AFTER EXTRACTING FILE KEY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         return (age_version, 0)
+
+    def _parse_recipient_start(self, recipent_line):
+        """This method parses a recipent line.
+
+        Args:
+            recipent_line: recipent line.
+
+        Returns:
+            The tuple (type, arguments).
+
+            Where arguments is a dictionary.
+        """
+        m = re.match(r"X25519 (?P<b64u_header_hmac>[a-zA-Z0-9\-_=]+)", line)
