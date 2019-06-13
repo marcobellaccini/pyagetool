@@ -36,17 +36,40 @@ class Age:
                 raise ValueError('Unsupported age-tool format version.')
             # read the remaining part of the header and get the HMAC
             b64_header_hmac = ""
-            while True:
+            recipent_lines = []
+            while not b64_header_hmac:
                 line = f.readline(RL_MAX_CHARS)
-                if re.match(r"--- (?P<b64_header_hmac>[a-zA-Z0-9+/=]+)",
-                            line):
-                    break
+                # if EOF
                 if not line:
                     raise ValueError('Missing header HMAC.')
+                # try to match HMAC
+                m = re.match(r"--- (?P<b64_header_hmac>[a-zA-Z0-9+/=]+)", line)
+                # if HMAC was found
+                if m:
+                    b64_header_hmac = m.group('b64_header_hmac')
+                # else, collect recipent lines
+                else:
+                    recipent_lines.append(line)
+                # collect lines for the HMAC
                 lines.append(line)
 
-            print(b64_header_hmac)
-            for a in lines:
-                print(a)
+            # parse recipients
+            recipients = []
+            for recipent_line in recipent_lines:
+                # if recipient start
+                if re.match(r"-> .*", recipent_line):
+                    # append recipient entry with empty body
+                    recipients.append( (parse_recipient_start(recipent_line),
+                                        []) )
+                    continue
+                # else, if recipient body, add body part to last recipient
+                # (after checking that a recipient start was found)
+                if recipients:
+                    recipients[-1][1].append(recipient_line)
+                else:
+                    raise ValueError('Malformed recipients.')
+
+
+            # TODO: CHECK HMAC AFTER EXTRACTING FILE KEY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         return (age_version, 0)
