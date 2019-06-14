@@ -56,36 +56,79 @@ class Age:
                 # collect lines for the HMAC
                 lines.append(line)
 
+            # merge recipient lines
+            recipients_data= "".join(recipent_line for recipent_line
+                                     in recipent_lines)
             # parse recipients
-            recipients = []
-            for recipent_line in recipent_lines:
-                # if recipient start
-                if re.match(r"-> [a-zA-Z0-9\-]+ ", recipent_line):
-                    # append recipient entry (type, arguments)
-                    recipients.append( (_parse_recipient_start(recipent_line),
-                                        []) )
-                    continue
-                # else, if recipient body, add body part to last recipient
-                # (after checking that a recipient start was found)
-                if recipients:
-                    recipients[-1][1].append(recipient_line)
-                else:
-                    raise ValueError('Malformed recipients.')
+            recipents = []
+            rdata_rest = recipients_data
+            while rdata_rest:
+                (recipient, rdata_rest) = _get_recipient(rdata_rest)
+                recipents.append(recipent)
+
+            if not recipents:
+                raise ValueError('Malformed recipients.')
 
 
             # TODO: CHECK HMAC AFTER EXTRACTING FILE KEY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         return (age_version, 0)
 
-    def _parse_recipient_start(self, recipent_line):
-        """This method parses a recipent line.
+    def _get_recipient(self, recipients_data):
+        """This method parses a recipent from recipients data.
 
         Args:
-            recipent_line: recipent line.
+            recipients_data: recipients data.
 
         Returns:
-            The tuple (type, arguments).
+            The tuple (recipient, rdata_rest).
 
-            Where arguments is a dictionary.
+            Where:
+
+            - recipient is the tuple (type, arguments)
+
+            - rdata_rest is the residual recipients data
+
         """
-        m = re.match(r"X25519 (?P<b64u_header_hmac>[a-zA-Z0-9\-_=]+)", line)
+        # X25519
+        m = re.match(r"-> X25519 "
+                    "(?P<arg1>[a-zA-Z0-9\-_=]+) ",
+                    "(?P<arg2>[a-zA-Z0-9\-_=]+)",
+                    "(?P<rdata_rest>.*)", recipent_data):
+        if m:
+            return ( ('X25519', [m.group('arg1'), m.group('arg2')]),
+                     m.group('rdata_rest') )
+
+        # scrypt
+        m = re.match(r"-> scrypt "
+                    "(?P<arg1>[a-zA-Z0-9\-_=]+) ",
+                    "(?P<arg2>[a-zA-Z0-9\-_=]+) ",
+                    "(?P<arg3>[a-zA-Z0-9\-_=]+)",
+                    "(?P<rdata_rest>.*)", recipent_data):
+        if m:
+            return ( ('scrypt',
+                      [m.group('arg1'), m.group('arg2'), m.group('arg3')]),
+                     m.group('rdata_rest') )
+
+        # ssh-rsa
+        m = re.match(r"-> ssh-rsa "
+                    "(?P<arg1>[a-zA-Z0-9\-_=]+) ",
+                    "(?P<arg2>[a-zA-Z0-9\-_=]+)",
+                    "(?P<rdata_rest>.*)", recipent_data):
+        if m:
+            return ( ('ssh-rsa', [m.group('arg1'), m.group('arg2')]),
+                     m.group('rdata_rest') )
+
+        # ssh-ed25519
+        m = re.match(r"-> ssh-ed25519 "
+                    "(?P<arg1>[a-zA-Z0-9\-_=]+) ",
+                    "(?P<arg2>[a-zA-Z0-9\-_=]+) ",
+                    "(?P<arg3>[a-zA-Z0-9\-_=]+)",
+                    "(?P<rdata_rest>.*)", recipent_data):
+        if m:
+            return ( ('ssh-ed25519',
+                      [m.group('arg1'), m.group('arg2'), m.group('arg3')]),
+                     m.group('rdata_rest') )
+
+        # if no match
+        raise ValueError('Malformed recipient line.')
