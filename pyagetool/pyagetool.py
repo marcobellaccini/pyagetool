@@ -3,7 +3,7 @@ import re
 
 """Main module."""
 
-RL_MAX_CHARS = 200
+RL_MAX_CHARS = 8000
 """int: max number of chars per-line.
 """
 
@@ -15,6 +15,8 @@ class Age:
 
     def _parse_header(self, path):
         """This method parses encrypted file header.
+
+        BEWARE: THIS METHOD DOES NOT PERFORM HMAC CHECK
 
         Args:
             path: encrypted file path.
@@ -58,21 +60,20 @@ class Age:
 
             # merge recipient lines
             recipients_data= "".join(recipent_line for recipent_line
-                                     in recipent_lines)
+                                     in recipent_lines).rstrip("\n")
             # parse recipients
             recipents = []
             rdata_rest = recipients_data
             while rdata_rest:
-                (recipient, rdata_rest) = _get_recipient(rdata_rest)
-                recipents.append(recipent)
+                (recipient, rdata_rest) = self._get_recipient(rdata_rest)
+                recipents.append(recipient)
 
             if not recipents:
-                raise ValueError('Malformed recipients.')
-
+                raise ValueError('No recipients.')
 
             # TODO: CHECK HMAC AFTER EXTRACTING FILE KEY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        return (age_version, 0)
+        return (age_version, recipents)
 
     def _get_recipient(self, recipients_data):
         """This method parses a recipent from recipients data.
@@ -91,43 +92,52 @@ class Age:
 
         """
         # X25519
-        m = re.match(r"-> X25519 "
-                    "(?P<arg1>[a-zA-Z0-9\-_=]+) ",
-                    "(?P<arg2>[a-zA-Z0-9\-_=]+)",
-                    "(?P<rdata_rest>.*)", recipent_data):
+        m = re.match(r"-> X25519" "[ \n]"
+                    "(?P<arg1>[a-zA-Z0-9\-_=]+)" "[ \n]"
+                    # the following will match everything until ->, EOS or
+                    # whitespace is found, without consuming these
+                    # expressions
+                    # (i.e. it performs a lookahead assertion)
+                    # https://docs.python.org/3/library/re.html
+                    "(?P<arg2>.+?(?=(->)|($)|( )))"
+                    "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
         if m:
-            return ( ('X25519', [m.group('arg1'), m.group('arg2')]),
+            return ( ('X25519', [m.group('arg1'),
+                                 m.group('arg2').replace('\n', '')]),
                      m.group('rdata_rest') )
 
         # scrypt
-        m = re.match(r"-> scrypt "
-                    "(?P<arg1>[a-zA-Z0-9\-_=]+) ",
-                    "(?P<arg2>[a-zA-Z0-9\-_=]+) ",
-                    "(?P<arg3>[a-zA-Z0-9\-_=]+)",
-                    "(?P<rdata_rest>.*)", recipent_data):
+        m = re.match(r"-> scrypt" "[ \n]"
+                    "(?P<arg1>[a-zA-Z0-9\-_=]+)" "[ \n]"
+                    "(?P<arg2>[a-zA-Z0-9\-_=]+)" "[ \n]"
+                    "(?P<arg3>.+?(?=(->)|($)|( )))"
+                    "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
         if m:
             return ( ('scrypt',
-                      [m.group('arg1'), m.group('arg2'), m.group('arg3')]),
+                      [m.group('arg1'), m.group('arg2'),
+                       m.group('arg3').replace('\n', '')]),
                      m.group('rdata_rest') )
 
         # ssh-rsa
-        m = re.match(r"-> ssh-rsa "
-                    "(?P<arg1>[a-zA-Z0-9\-_=]+) ",
-                    "(?P<arg2>[a-zA-Z0-9\-_=]+)",
-                    "(?P<rdata_rest>.*)", recipent_data):
+        m = re.match(r"-> ssh-rsa" "[ \n]"
+                    "(?P<arg1>[a-zA-Z0-9\-_=]+)" "[ \n]"
+                    "(?P<arg2>.+?(?=(->)|($)|( )))"
+                    "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
         if m:
-            return ( ('ssh-rsa', [m.group('arg1'), m.group('arg2')]),
+            return ( ('ssh-rsa', [m.group('arg1'),
+                                  m.group('arg2').replace('\n', '')]),
                      m.group('rdata_rest') )
 
         # ssh-ed25519
-        m = re.match(r"-> ssh-ed25519 "
-                    "(?P<arg1>[a-zA-Z0-9\-_=]+) ",
-                    "(?P<arg2>[a-zA-Z0-9\-_=]+) ",
-                    "(?P<arg3>[a-zA-Z0-9\-_=]+)",
-                    "(?P<rdata_rest>.*)", recipent_data):
+        m = re.match(r"-> ssh-ed25519" "[ \n]"
+                    "(?P<arg1>[a-zA-Z0-9\-_=]+)" "[ \n]"
+                    "(?P<arg2>[a-zA-Z0-9\-_=]+)" "[ \n]"
+                    "(?P<arg3>.+?(?=(->)|($)|( )))"
+                    "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
         if m:
             return ( ('ssh-ed25519',
-                      [m.group('arg1'), m.group('arg2'), m.group('arg3')]),
+                      [m.group('arg1'), m.group('arg2'),
+                       m.group('arg3').replace('\n', '')]),
                      m.group('rdata_rest') )
 
         # if no match
