@@ -13,13 +13,13 @@ class Age:
     # b64u stands for "Base 64 Encoding with URL and Filename Safe Alphabet"
     # https://tools.ietf.org/html/rfc4648#section-5
 
-    def _parse_header(self, path):
+    def _parse_header(self, f):
         """This method parses encrypted file header.
 
         BEWARE: THIS METHOD DOES NOT PERFORM HMAC CHECK
 
         Args:
-            path: encrypted file path.
+            f: input file object.
 
         Returns:
             The tuple (age_version, recipients).
@@ -27,51 +27,50 @@ class Age:
             If something goes wrong, it will raise an exception.
         """
 
-        with open(path) as f:
-            lines = [f.readline(RL_MAX_CHARS)]
-            # parse file format version
-            m = re.match(r"This is a file encrypted with age-tool.com, "
-                          "version (?P<age_version>[a-zA-Z0-9_.]+)", lines[0])
-            # check whether file is in age format
-            if not m:
-                raise ValueError('Target file is not an age-tool file.')
-            # check format version
-            age_version = m.group('age_version')
-            if age_version != '1':
-                raise ValueError('Unsupported age-tool format version.')
-            # read the remaining part of the header and get the HMAC
-            b64u_header_hmac = ""
-            recipent_lines = []
-            while not b64u_header_hmac:
-                line = f.readline(RL_MAX_CHARS)
-                # if EOF
-                if not line:
-                    raise ValueError('Missing header HMAC.')
-                # try to match HMAC
-                m = re.match(r"--- (?P<b64u_header_hmac>[a-zA-Z0-9\-_=]+)", line)
-                # if HMAC was found
-                if m:
-                    b64u_header_hmac = m.group('b64u_header_hmac')
-                # else, collect recipent lines
-                else:
-                    recipent_lines.append(line)
-                # collect lines for the HMAC
-                lines.append(line)
+        lines = [f.readline(RL_MAX_CHARS)]
+        # parse file format version
+        m = re.match(r"This is a file encrypted with age-tool.com, "
+                      "version (?P<age_version>[a-zA-Z0-9_.]+)", lines[0])
+        # check whether file is in age format
+        if not m:
+            raise ValueError('Target file is not an age-tool file.')
+        # check format version
+        age_version = m.group('age_version')
+        if age_version != '1':
+            raise ValueError('Unsupported age-tool format version.')
+        # read the remaining part of the header and get the HMAC
+        b64u_header_hmac = ""
+        recipent_lines = []
+        while not b64u_header_hmac:
+            line = f.readline(RL_MAX_CHARS)
+            # if EOF
+            if not line:
+                raise ValueError('Missing header HMAC.')
+            # try to match HMAC
+            m = re.match(r"--- (?P<b64u_header_hmac>[a-zA-Z0-9\-_=]+)", line)
+            # if HMAC was found
+            if m:
+                b64u_header_hmac = m.group('b64u_header_hmac')
+            # else, collect recipent lines
+            else:
+                recipent_lines.append(line)
+            # collect lines for the HMAC
+            lines.append(line)
 
-            # merge recipient lines
-            recipients_data= "".join(recipent_line for recipent_line
-                                     in recipent_lines).rstrip("\n")
-            # parse recipients
-            recipents = []
-            rdata_rest = recipients_data
-            while rdata_rest:
-                (recipient, rdata_rest) = self._get_recipient(rdata_rest)
-                recipents.append(recipient)
+        # merge recipient lines
+        recipients_data= "".join(recipent_line for recipent_line
+                                 in recipent_lines).rstrip("\n")
+        # parse recipients
+        recipents = []
+        rdata_rest = recipients_data
+        while rdata_rest:
+            (recipient, rdata_rest) = self._get_recipient(rdata_rest)
+            recipents.append(recipient)
 
-            if not recipents:
-                raise ValueError('No recipients.')
+        if not recipents:
+            raise ValueError('No recipients.')
 
-            # TODO: CHECK HMAC AFTER EXTRACTING FILE KEY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # TODO: CHECK HMAC AFTER EXTRACTING FILE KEY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         return (age_version, recipents)
 
