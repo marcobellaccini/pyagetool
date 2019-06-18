@@ -4,6 +4,14 @@ pyagetool package
 Submodules
 ----------
 
+pyagetool.X25519 module
+-----------------------
+
+.. automodule:: pyagetool.X25519
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyagetool.pyagetool module
 --------------------------
 

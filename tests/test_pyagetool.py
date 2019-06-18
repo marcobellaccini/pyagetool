@@ -9,8 +9,8 @@ import unittest
 from pyagetool import pyagetool
 
 
-class TestPyagetool(unittest.TestCase):
-    """Tests for `pyagetool` package."""
+class TestAge(unittest.TestCase):
+    """Tests for the `Age` class."""
 
     def setUp(self):
         """Set up test fixtures, if any."""
