@@ -17,7 +17,6 @@ class Testscrypt(unittest.TestCase):
         argl = ['bBjlhJVYZeE4aqUdmtRHfw32768',
                 'ZV_AhotwSGqaPCU43cepl4WYUouAa17a3xpu4G2yi5k']
         password = 'test'
-        scrypt = scrypt.scrypt()
         self.assertRaisesRegex(ValueError, ('Cannot decrypt file key.'),
                                scrypt._get_key, argl, password)
 
@@ -26,6 +25,5 @@ class Testscrypt(unittest.TestCase):
         argl = ['bBjlhJVYZeE4aqUdmtRHfw32768',
                 'ZV_AhotwSGqaPCU43cepl4WYUouAa17a3xpu4G2yi5k']
         password = 'test'
-        scrypt = scrypt.scrypt()
         key = scrypt._get_key(argl, password)
         self.assertEqual('12345', key)

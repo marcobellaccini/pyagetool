@@ -18,11 +18,8 @@ class TestX25519(unittest.TestCase):
                 'E3ZAeY64NXS4QFrksLm3EGz-uPRyI0eQsWw7LWbbYih']
         pubkey = '38W5ph53zfPGOzEOH-fMojQ4jUY7VLEmtmozREqnw4I'
         privkey = 'TQvvHYA29yZk8Lelpiz8lW7QdlxkE4djb1NOjLgeUFg'
-        x25519 = X25519.X25519()
-        # key = x25519._get_key(argl, pubkey, privkey)
         self.assertRaisesRegex(ValueError, ('Cannot decrypt file key.'),
-                               x25519._get_key, argl, pubkey, privkey)
-        # self.assertEqual('12345', key)
+                               X25519._get_key, argl, pubkey, privkey)
 
     def test__get_key_ok(self):
         """Test _get_key method: good key"""
@@ -30,6 +27,5 @@ class TestX25519(unittest.TestCase):
                 'C3ZAeY64NXS4QFrksLm3EGz-uPRyI0eQsWw7LWbbYig']
         pubkey = '98W5ph53zfPGOzEOH-fMojQ4jUY7VLEmtmozREqnw4I'
         privkey = 'RQvvHYA29yZk8Lelpiz8lW7QdlxkE4djb1NOjLgeUFg'
-        x25519 = X25519.X25519()
-        key = x25519._get_key(argl, pubkey, privkey)
+        key = X25519._get_key(argl, pubkey, privkey)
         self.assertEqual('12345', key)
