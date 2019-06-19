@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 """X25519 module."""
 
 
-def _get_key(self, argl, pubkeyb64, privkeyb64):
+def _get_key(argl, pubkeyb64, privkeyb64):
     """This method decrypts file key from X25519 line arguments.
 
     Args:

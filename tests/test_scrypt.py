@@ -15,6 +15,7 @@ class Testscrypt(unittest.TestCase):
     def test__get_key_badpass(self):
         """Test _get_key method: cannot decrypt key"""
         argl = ['bBjlhJVYZeE4aqUdmtRHfw32768',
+                '32768',
                 'ZV_AhotwSGqaPCU43cepl4WYUouAa17a3xpu4G2yi5k']
         password = 'test'
         self.assertRaisesRegex(ValueError, ('Cannot decrypt file key.'),

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import base64
-
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.exceptions import InvalidTag
 

@@ -8,7 +8,7 @@ from cryptography.hazmat.backends import default_backend
 """scrypt module."""
 
 
-def _get_key(self, argl, password):
+def _get_key(argl, password):
     """This method decrypts file key from scrypt line arguments.
 
     Args:
@@ -24,7 +24,10 @@ def _get_key(self, argl, password):
     # decode salt
     salt = encoding._decode(argl[0])
     # get cost
-    n = argl[1]
+    try:
+        n = int(argl[1])
+    except ValueError:
+        raise ValueError('Invalid scrypt cost')
     # decode encrypted file key
     enc_file_key = encoding._decode(argl[2])
     # compute key encryption key
