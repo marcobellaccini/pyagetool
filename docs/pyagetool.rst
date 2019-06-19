@@ -12,6 +12,14 @@ pyagetool.X25519 module
     :undoc-members:
     :show-inheritance:
 
+pyagetool.encoding module
+-------------------------
+
+.. automodule:: pyagetool.encoding
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyagetool.pyagetool module
 --------------------------
 

@@ -16,9 +16,10 @@ pyagetool
 
 
 
-Python implementation of `@FiloSottile`_ and `@Benjojo12`_ age crypto format (`age-tool.com`_).
+Python module to handle files in the age crypto format (`age-tool.com`_ -
+by `@FiloSottile`_ and `@Benjojo12`_).
 
-This is still incomplete and HIGHLY EXPERIMENTAL.
+**This is still incomplete and HIGHLY EXPERIMENTAL**.
 
 
 * Free software: Apache Software License 2.0
