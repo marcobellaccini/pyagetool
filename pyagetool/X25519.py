@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 from . import encoding
+from . import symencrypt
 
 from cryptography.hazmat.primitives.asymmetric import x25519
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-from cryptography.exceptions import InvalidTag
 
 """X25519 module."""
 
@@ -43,19 +42,13 @@ class X25519:
         ld_pub_key = x25519.X25519PublicKey.from_public_bytes(peer_pub_key)
         # compute shared key
         shared_key = ld_priv_key.exchange(ld_pub_key)
-        # compute derived key
-        derived_key = HKDF(
+        # compute key encryption key
+        kek = HKDF(
             algorithm=hashes.SHA256(),
             length=32,
             salt=peer_pub_key + pub_key,
             info=b'age-tool.com X25519',
             backend=default_backend()
             ).derive(shared_key)
-        # decode and return file key
-        chacha = ChaCha20Poly1305(derived_key)
-        nonce = b'\0' * 12
-        try:
-            file_key = chacha.decrypt(nonce, enc_file_key, None)
-        except InvalidTag:
-            raise ValueError('Cannot decrypt file key.')
-        return file_key
+        # decrypt and return file key
+        return symencrypt._decrypt_key(kek, enc_file_key)
