@@ -18,6 +18,8 @@ pyagetool
 
 Python implementation of `@FiloSottile`_ and `@Benjojo12`_ age crypto format (`age-tool.com`_).
 
+This is still incomplete and HIGHLY EXPERIMENTAL.
+
 
 * Free software: Apache Software License 2.0
 * Documentation: https://pyagetool.readthedocs.io.
