@@ -7,6 +7,7 @@ RL_MAX_CHARS = 8000
 """int: max number of chars per-line.
 """
 
+
 class Age:
     """Main age format class"""
 
@@ -30,7 +31,7 @@ class Age:
         lines = [f.readline(RL_MAX_CHARS)]
         # parse file format version
         m = re.match(r"This is a file encrypted with age-tool.com, "
-                      "version (?P<age_version>[a-zA-Z0-9_.]+)", lines[0])
+                     "version (?P<age_version>[a-zA-Z0-9_.]+)", lines[0])
         # check whether file is in age format
         if not m:
             raise ValueError('Target file is not an age-tool file.')
@@ -58,8 +59,8 @@ class Age:
             lines.append(line)
 
         # merge recipient lines
-        recipients_data= "".join(recipent_line for recipent_line
-                                 in recipent_lines).rstrip("\n")
+        recipients_data = "".join(recipent_line for recipent_line
+                                  in recipent_lines).rstrip("\n")
         # parse recipients
         recipents = []
         rdata_rest = recipients_data
@@ -70,7 +71,7 @@ class Age:
         if not recipents:
             raise ValueError('No recipients.')
 
-        # TODO: CHECK HMAC AFTER EXTRACTING FILE KEY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # TODO: CHECK HMAC AFTER EXTRACTING FILE KEY!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         return (age_version, recipents)
 
@@ -92,52 +93,52 @@ class Age:
         """
         # X25519
         m = re.match(r"-> X25519" "[ \n]"
-                    "(?P<arg1>[a-zA-Z0-9\-_=]+)" "[ \n]"
-                    # the following will match everything until ->, EOS or
-                    # whitespace is found, without consuming these
-                    # expressions
-                    # (i.e. it performs a lookahead assertion)
-                    # https://docs.python.org/3/library/re.html
-                    "(?P<arg2>.+?(?=(->)|($)|( )))"
-                    "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
+                     "(?P<arg1>[a-zA-Z0-9-_=]+)" "[ \n]"
+                     # the following will match everything until ->, EOS or
+                     # whitespace is found, without consuming these
+                     # expressions
+                     # (i.e. it performs a lookahead assertion)
+                     # https://docs.python.org/3/library/re.html
+                     "(?P<arg2>.+?(?=(->)|($)|( )))"
+                     "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
         if m:
-            return ( ('X25519', [m.group('arg1'),
-                                 m.group('arg2').replace('\n', '')]),
-                     m.group('rdata_rest') )
+            return (('X25519', [m.group('arg1'),
+                                m.group('arg2').replace('\n', '')]),
+                    m.group('rdata_rest'))
 
         # scrypt
         m = re.match(r"-> scrypt" "[ \n]"
-                    "(?P<arg1>[a-zA-Z0-9\-_=]+)" "[ \n]"
-                    "(?P<arg2>[a-zA-Z0-9\-_=]+)" "[ \n]"
-                    "(?P<arg3>.+?(?=(->)|($)|( )))"
-                    "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
+                     "(?P<arg1>[a-zA-Z0-9-_=]+)" "[ \n]"
+                     "(?P<arg2>[a-zA-Z0-9-_=]+)" "[ \n]"
+                     "(?P<arg3>.+?(?=(->)|($)|( )))"
+                     "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
         if m:
-            return ( ('scrypt',
-                      [m.group('arg1'), m.group('arg2'),
-                       m.group('arg3').replace('\n', '')]),
-                     m.group('rdata_rest') )
+            return (('scrypt',
+                     [m.group('arg1'), m.group('arg2'),
+                      m.group('arg3').replace('\n', '')]),
+                    m.group('rdata_rest'))
 
         # ssh-rsa
         m = re.match(r"-> ssh-rsa" "[ \n]"
-                    "(?P<arg1>[a-zA-Z0-9\-_=]+)" "[ \n]"
-                    "(?P<arg2>.+?(?=(->)|($)|( )))"
-                    "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
+                     "(?P<arg1>[a-zA-Z0-9-_=]+)" "[ \n]"
+                     "(?P<arg2>.+?(?=(->)|($)|( )))"
+                     "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
         if m:
-            return ( ('ssh-rsa', [m.group('arg1'),
-                                  m.group('arg2').replace('\n', '')]),
-                     m.group('rdata_rest') )
+            return (('ssh-rsa', [m.group('arg1'),
+                                 m.group('arg2').replace('\n', '')]),
+                    m.group('rdata_rest'))
 
         # ssh-ed25519
         m = re.match(r"-> ssh-ed25519" "[ \n]"
-                    "(?P<arg1>[a-zA-Z0-9\-_=]+)" "[ \n]"
-                    "(?P<arg2>[a-zA-Z0-9\-_=]+)" "[ \n]"
-                    "(?P<arg3>.+?(?=(->)|($)|( )))"
-                    "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
+                     "(?P<arg1>[a-zA-Z0-9-_=]+)" "[ \n]"
+                     "(?P<arg2>[a-zA-Z0-9-_=]+)" "[ \n]"
+                     "(?P<arg3>.+?(?=(->)|($)|( )))"
+                     "(?P<rdata_rest>.*)", recipients_data, re.DOTALL)
         if m:
-            return ( ('ssh-ed25519',
-                      [m.group('arg1'), m.group('arg2'),
-                       m.group('arg3').replace('\n', '')]),
-                     m.group('rdata_rest') )
+            return (('ssh-ed25519',
+                     [m.group('arg1'), m.group('arg2'),
+                      m.group('arg3').replace('\n', '')]),
+                    m.group('rdata_rest'))
 
         # if no match
         raise ValueError('Malformed recipient line.')

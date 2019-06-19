@@ -10,6 +10,7 @@ from cryptography.exceptions import InvalidTag
 
 """X25519 module."""
 
+
 class X25519:
     """X25519 class"""
 
@@ -44,11 +45,11 @@ class X25519:
         shared_key = ld_priv_key.exchange(ld_pub_key)
         # compute derived key
         derived_key = HKDF(
-            algorithm = hashes.SHA256(),
-            length = 32,
-            salt = peer_pub_key + pub_key,
-            info = b'age-tool.com X25519',
-            backend = default_backend()
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=peer_pub_key + pub_key,
+            info=b'age-tool.com X25519',
+            backend=default_backend()
             ).derive(shared_key)
         # decode and return file key
         chacha = ChaCha20Poly1305(derived_key)

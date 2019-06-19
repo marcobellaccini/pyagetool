@@ -3,6 +3,7 @@ import base64
 
 """encoding module."""
 
+
 def _encode(data):
     """This method encodes bytes in Base 64 Encoding with URL and
     Filename Safe Alphabet, WITHOUT padding.
@@ -15,6 +16,7 @@ def _encode(data):
 
     """
     return base64.urlsafe_b64encode(data).decode("utf-8").rstrip('=')
+
 
 def _decode(encdata):
     """This method decodes bytes from Base 64 Encoding with URL and
