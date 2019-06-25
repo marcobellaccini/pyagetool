@@ -2,6 +2,7 @@
 from . import encoding
 from . import symencrypt
 
+from nacl.exceptions import RuntimeError as NaclRuntimeError
 from nacl.bindings import crypto_scalarmult_base, crypto_scalarmult
 # here we use pyca/cryptography because libsodium seems to miss
 # HKDF-SHA256 (it's Blake2-only)
@@ -26,22 +27,27 @@ def _get_key(argl, pubkeyb64, privkeyb64):
     Returns:
         File key.
 
+    It raises ValueError whether some issue is detected.
+
     """
-    # decode peer public key
-    peer_pub_key = encoding._decode(argl[0])
+    # decode ephemeral public key
+    eph_pub_key = encoding._decode(argl[0])
     # decode encrypted file key
     enc_file_key = encoding._decode(argl[1])
-    # decode public key
-    pub_key = encoding._decode(pubkeyb64)
-    # decode private key
+    # decode static public key
+    static_pub_key = encoding._decode(pubkeyb64)
+    # decode static private key
     priv_key = encoding._decode(privkeyb64)
     # compute shared key
-    shared_key = crypto_scalarmult(priv_key, peer_pub_key)
+    try:
+        shared_key = crypto_scalarmult(priv_key, eph_pub_key)
+    except NaclRuntimeError:
+        raise ValueError('Libsodium prevented all-zeros X25519 output.')
     # compute key encryption key
     kek = HKDF(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=peer_pub_key + pub_key,
+        salt=eph_pub_key + static_pub_key,
         info=b'age-tool.com X25519',
         backend=default_backend()
         ).derive(shared_key)
@@ -63,8 +69,32 @@ def _put_key(pubkeyb64, eph_secret, file_key):
     Returns:
         X25519 line argument list.
 
+    It raises ValueError whether some issue is detected.
+
     """
-    # decode target (peer) public key
-    peer_pub_key = encoding._decode(pubkeyb64)
-    # load peer public key
-    ld_pub_key = x25519.X25519PublicKey.from_public_bytes(peer_pub_key)
+    # compute ephemeral public key
+    try:
+        eph_pub_key = crypto_scalarmult_base(eph_secret)
+    except NaclRuntimeError:
+        raise ValueError('Libsodium prevented all-zeros X25519 output.')
+    # decode static public key
+    static_pub_key = encoding._decode(pubkeyb64)
+    # compute shared key
+    try:
+        shared_key = crypto_scalarmult(eph_secret, static_pub_key)
+    except NaclRuntimeError:
+        raise ValueError('Libsodium prevented all-zeros X25519 output.')
+    # compute key encryption key
+    kek = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=eph_pub_key + static_pub_key,
+        info=b'age-tool.com X25519',
+        backend=default_backend()
+        ).derive(shared_key)
+    # encrypt file key
+    enc_file_key = symencrypt._encrypt_key(kek, file_key)
+    # build and return X25519 line argument list
+    argl = [encoding._encode(eph_pub_key),
+            encoding._encode(enc_file_key)]
+    return argl
