@@ -2,8 +2,7 @@
 from . import encoding
 from . import symencrypt
 
-from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
-from cryptography.hazmat.backends import default_backend
+from nacl.hashlib import scrypt
 
 """scrypt module."""
 
@@ -31,15 +30,8 @@ def _get_key(argl, password):
     # decode encrypted file key
     enc_file_key = encoding._decode(argl[2])
     # compute key encryption key
-    kdf = Scrypt(
-            salt=salt,
-            length=32,
-            n=n,
-            r=8,
-            p=1,
-            backend=default_backend()
-            )
-    kek = kdf.derive(password.encode("utf-8"))
+    kek = scrypt(password.encode("utf-8"), salt=salt, n=n, r=8, p=1,
+                 maxmem=2**28, dklen=32)
     # decrypt and return file key
     return symencrypt._decrypt_key(kek, enc_file_key)
 
@@ -62,15 +54,8 @@ def _put_key(password, n, salt, file_key):
     """
 
     # compute key encryption key
-    kdf = Scrypt(
-            salt=salt,
-            length=32,
-            n=n,
-            r=8,
-            p=1,
-            backend=default_backend()
-            )
-    kek = kdf.derive(password.encode("utf-8"))
+    kek = scrypt(password.encode("utf-8"), salt=salt, n=n, r=8, p=1,
+                 maxmem=2**28, dklen=32)
     # encrypt file key
     enc_file_key = symencrypt._encrypt_key(kek, file_key)
     # build and return argument list

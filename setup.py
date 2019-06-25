@@ -11,7 +11,9 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['cryptography']
+# unfortunately neither cryptography nor PyNaCl implement all the needed
+# crypto primitives
+requirements = ['cryptography', 'PyNaCl']
 
 setup_requirements = [ ]
 

@@ -2,10 +2,13 @@
 from . import encoding
 from . import symencrypt
 
-from cryptography.hazmat.primitives.asymmetric import x25519
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
+from nacl.bindings import crypto_scalarmult_base, crypto_scalarmult
+# here we use pyca/cryptography because libsodium seems to miss
+# HKDF-SHA256 (it's Blake2-only)
+# https://github.com/jedisct1/libsodium/issues/367
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
 
 """X25519 module."""
 
@@ -32,13 +35,8 @@ def _get_key(argl, pubkeyb64, privkeyb64):
     pub_key = encoding._decode(pubkeyb64)
     # decode private key
     priv_key = encoding._decode(privkeyb64)
-
-    # load private key
-    ld_priv_key = x25519.X25519PrivateKey.from_private_bytes(priv_key)
-    # load peer public key
-    ld_pub_key = x25519.X25519PublicKey.from_public_bytes(peer_pub_key)
     # compute shared key
-    shared_key = ld_priv_key.exchange(ld_pub_key)
+    shared_key = crypto_scalarmult(priv_key, peer_pub_key)
     # compute key encryption key
     kek = HKDF(
         algorithm=hashes.SHA256(),
@@ -49,3 +47,24 @@ def _get_key(argl, pubkeyb64, privkeyb64):
         ).derive(shared_key)
     # decrypt and return file key
     return symencrypt._decrypt_key(kek, enc_file_key)
+
+
+def _put_key(pubkeyb64, eph_secret, file_key):
+    """This method encrypts file key using X25519 and returns X25519 line
+    argument list.
+
+    Args:
+        pubkeyb64: target base64url-encode X25519 public key.
+
+        eph_secret: 32-bytes ephemeral secret.
+
+        file_key: file key to encrypt using X25519.
+
+    Returns:
+        X25519 line argument list.
+
+    """
+    # decode target (peer) public key
+    peer_pub_key = encoding._decode(pubkeyb64)
+    # load peer public key
+    ld_pub_key = x25519.X25519PublicKey.from_public_bytes(peer_pub_key)
